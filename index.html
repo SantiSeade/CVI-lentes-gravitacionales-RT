@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>PoC - Lente gravitacional con WebGPU</title>
+  <style>
+    body { margin: 0; background: #000; color: #ccc; font-family: sans-serif;
+           display: flex; flex-direction: column; align-items: center; }
+    canvas { width: min(100vw, 1000px); height: auto; margin-top: 12px; }
+    p { margin: 8px; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <p>Pulsa <b>G</b> para alternar la gravedad: <span id="estado">ON (espacio curvo)</span></p>
+  <!-- Todo el código vive en src/. type="module" permite usar sintaxis moderna de JS. -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
+ 
