@@ -17,3 +17,5 @@ trace(): --> hilo por pixel
 2. Lo va curvando paso a paso con integrador runge-kutta. Se hace paso pequeño por cada rayo y después de cada paso este se curva ligeramente.
 3. Prueba cad paso del rayo contra la esfera.
 4. Calcula el color y lo guarda.
+
+Se usó integrador RK4 porque los que usan menos pasos son notablemente menos precisos. También se probó un proof of concept con RK45 con etsa misma escena. La escena se veía marginalmente mejor a costa de una cantidad considerable de performance. Al final se decidió usar RK4 porque tiene un buen balance entre precisión y performance. Esto es importante porque a medida que la simulación se vuelve más compleja, es importante mantener tanto precisión como rendimiento. 
