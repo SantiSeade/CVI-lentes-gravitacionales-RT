@@ -37,10 +37,10 @@ Hacer esto de forma cuidadosa y precisa se llama **integración numérica**. RK4
 
 En cada instante el fotón se describe con dos vectores:
 
-| Símbolo | Significado | 
-|---|---|
-| `P` | Posición (dónde está) |
-| `V` | Velocidad (hacia dónde va) |
+| Símbolo | Significado                |
+| ------- | -------------------------- |
+| `P`     | Posición (dónde está)      |
+| `V`     | Velocidad (hacia dónde va) |
 
 Y las reglas de cambio son solo dos:
 
@@ -62,7 +62,7 @@ Interpretación sencilla:
 - **`h²`** es el momento angular del fotón (`h = |P × V|`). Si el rayo apunta directo al centro, `h = 0` y no se curva. Si pasa rozando, `h` es grande y se curva mucho. Es constante durante todo el viaje, así que se calcula una sola vez.
 - **`rs`** es el radio de Schwarzschild (en el código, `rs = 1`).
 
-Todo lo que hace el integrador es: *dado `P` y `V` ahora, calcular `P` y `V` un instante `dt` después.*
+Todo lo que hace el integrador es: _dado `P` y `V` ahora, calcular `P` y `V` un instante `dt` después._
 
 ---
 
@@ -87,12 +87,12 @@ RK4 resuelve el problema consultando la dirección del cambio **en cuatro puntos
 
 Llamamos a esas cuatro lecturas `k1`, `k2`, `k3` y `k4` (cada una tiene una parte para la posición y otra para la velocidad):
 
-| Lectura | ¿Dónde se mide? | ¿Cómo se estima ese punto? |
-|---|---|---|
-| `k1` | Al **inicio** del paso | Con el estado actual |
-| `k2` | A la **mitad** del paso | Avanzando medio paso con la pendiente `k1` |
-| `k3` | A la **mitad** del paso (otra vez) | Avanzando medio paso con la pendiente `k2`, que es una mejor estimación |
-| `k4` | Al **final** del paso | Avanzando un paso completo con la pendiente `k3` |
+| Lectura | ¿Dónde se mide?                    | ¿Cómo se estima ese punto?                                              |
+| ------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| `k1`    | Al **inicio** del paso             | Con el estado actual                                                    |
+| `k2`    | A la **mitad** del paso            | Avanzando medio paso con la pendiente `k1`                              |
+| `k3`    | A la **mitad** del paso (otra vez) | Avanzando medio paso con la pendiente `k2`, que es una mejor estimación |
+| `k4`    | Al **final** del paso              | Avanzando un paso completo con la pendiente `k3`                        |
 
 Después se combinan con estos pesos:
 
@@ -201,12 +201,12 @@ Aunque RK4 es preciso, un paso demasiado grande en una zona muy curva sigue dand
 let dt = clamp(0.08 * (r - RS) + 0.01, 0.01, 0.5);
 ```
 
-| Distancia `r` | Paso `dt` aproximado | Situación |
-|---|---|---|
-| 14 (la cámara) | 0.5 (máximo) | Espacio casi plano: pasos largos |
-| 5 | ~0.33 | Curvatura moderada |
-| 1.5 (esfera de fotones) | ~0.05 | Curvatura fuerte: pasos cortos |
-| 1.1 (cerca del horizonte) | ~0.018 | Casi en el límite, mínimo cuidado |
+| Distancia `r`             | Paso `dt` aproximado | Situación                         |
+| ------------------------- | -------------------- | --------------------------------- |
+| 14 (la cámara)            | 0.5 (máximo)         | Espacio casi plano: pasos largos  |
+| 5                         | ~0.33                | Curvatura moderada                |
+| 1.5 (esfera de fotones)   | ~0.05                | Curvatura fuerte: pasos cortos    |
+| 1.1 (cerca del horizonte) | ~0.018               | Casi en el límite, mínimo cuidado |
 
 Es la misma lógica que reducir la velocidad al entrar a una curva cerrada: en la recta aceleras, en la curva vas despacio.
 
@@ -218,12 +218,12 @@ A `r = 1.5·rs` la luz puede orbitar el agujero negro en círculo. Los rayos que
 
 ## 9. ¿Por qué RK4 y no otro método?
 
-| Método | Evaluaciones por paso | Precisión | Comentario |
-|---|---|---|---|
-| Euler | 1 | Baja | Necesita pasos diminutos; la luz «se escapa» de la curva |
-| Punto medio (RK2) | 2 | Media | Mejor, pero aún con deriva visible cerca del agujero |
-| **RK4** | **4** | **Alta** | Buen equilibrio entre costo y exactitud; fácil de programar |
-| RK45 / Dormand-Prince | 6+ | Muy alta | Ajusta su propio paso según el error estimado; más complejo |
+| Método                | Evaluaciones por paso | Precisión | Comentario                                                  |
+| --------------------- | --------------------- | --------- | ----------------------------------------------------------- |
+| Euler                 | 1                     | Baja      | Necesita pasos diminutos; la luz «se escapa» de la curva    |
+| Punto medio (RK2)     | 2                     | Media     | Mejor, pero aún con deriva visible cerca del agujero        |
+| **RK4**               | **4**                 | **Alta**  | Buen equilibrio entre costo y exactitud; fácil de programar |
+| RK45 / Dormand-Prince | 6+                    | Muy alta  | Ajusta su propio paso según el error estimado; más complejo |
 
 RK4 cuesta 4 veces más por paso que Euler, pero su error disminuye muchísimo más rápido al achicar el paso, así que **con pasos más grandes logra mejor resultado**. En total, suele salir más barato llegar a una precisión dada con RK4 que con Euler. Además, para una GPU el código es sencillo: sin ramas complicadas ni memoria extra.
 
@@ -233,12 +233,12 @@ RK4 cuesta 4 veces más por paso que Euler, pero su error disminuye muchísimo m
 
 ### Parámetros que puedes mover
 
-| Parámetro | Efecto si lo aumentas | Efecto si lo disminuyes |
-|---|---|---|
-| `0.08` (factor de `dt`) | Menos pasos, más rápido, menos preciso | Más pasos, más lento, más preciso |
-| `0.5` (`dt` máximo) | Lejos del agujero avanza más rápido | Avanza más lento en el espacio plano |
-| `0.01` (`dt` mínimo) | Menos detalle cerca del horizonte | Más detalle, más costo |
-| `MAX_STEPS` | Los rayos que giran mucho pueden terminar su recorrido | Esos rayos se cortan antes (píxeles negros) |
+| Parámetro               | Efecto si lo aumentas                                  | Efecto si lo disminuyes                     |
+| ----------------------- | ------------------------------------------------------ | ------------------------------------------- |
+| `0.08` (factor de `dt`) | Menos pasos, más rápido, menos preciso                 | Más pasos, más lento, más preciso           |
+| `0.5` (`dt` máximo)     | Lejos del agujero avanza más rápido                    | Avanza más lento en el espacio plano        |
+| `0.01` (`dt` mínimo)    | Menos detalle cerca del horizonte                      | Más detalle, más costo                      |
+| `MAX_STEPS`             | Los rayos que giran mucho pueden terminar su recorrido | Esos rayos se cortan antes (píxeles negros) |
 
 ### Cómo saber si funciona bien
 
