@@ -1,21 +1,56 @@
-# CVI-lentes-gravitacionales-RT
+# Simulador en Tiempo Real de Lentes Gravitacionales con WebGPU
 
-## Descripción inicial del proyecto del proyecto: 
+Motor gráfico en tiempo real desarrollado para la asignatura de **Computación Visual** que simula **lentes gravitacionales** bajo la métrica de Schwarzschild en **WebGPU / WGSL**. A diferencia de las demos que solo distorsionan una textura de fondo, aquí los rayos de luz se integran numéricamente con **RK4 de paso adaptativo** y cada micro-segmento del rayo curvo se intersecta contra **mallas de triángulos 3D reales** (estrella, planetas y lunas en órbita) aceleradas mediante un **BVH linealizado de dos niveles (TLAS + BLAS)** construido con **códigos de Morton (orden Z)**.
 
-La mayoría de los renders astronómicos actuales simulan curvas en los rayos de luz distorsionando imágenes detrás de objetos celestiales de gran masa. Realmente no calculan la traectoria que toman los rayos de luz al pasar cerca a estos objetos. La idea de este proyecto es hacer un ray tracer (posiblemente en tiempo real) que sea capaz de calcular las trayectorias de rayos de luz teniendo en cuenta deformaciones en el espacio tiempo causadas por objetos de gran masa, como lo son planetas, estrellas agujeros negros y posiblemente naves espaciales.
+---
 
-## Journal:
-### 26/10/2026:
-Se realizó un proof of concept para probar si en efecto era posible hacer un ray tracer que tomara en cuenta la curvatura del espacio. En esta iteración inicial se creó una estructura básica del proyecto. Un índice html con la página principal y la interactividad con la tecla g para prender y apagar los efectos gravitacionales.
+## Requisitos del navegador
 
-La lógica del CPU se encuentra en el archivo main.js. Acá inicializa WebGPU, carga y compila el shader, crea buffers, etc. La lógica del GPU se encuentra en shader.wgsl. Acá se hacen los cálculos necesarios para cada rayo. Esta es la parte más esencial del proyecto.
+- **Chrome 113+** o **Edge 113+** (o Firefox Nightly / Safari con soporte WebGPU habilitado).
+- **Node.js 20+** y `npm` para ejecutar el servidor de desarrollo y las pruebas unitarias.
 
-**El flujo general en la GPU de este proof of concept se ve así:**
+---
 
-trace(): --> hilo por pixel
-1. crea rayo desde la cámara.
-2. Lo va curvando paso a paso con integrador runge-kutta. Se hace paso pequeño por cada rayo y después de cada paso este se curva ligeramente.
-3. Prueba cad paso del rayo contra la esfera.
-4. Calcula el color y lo guarda.
+## Instalación y ejecución
 
-Se usó integrador RK4 porque los que usan menos pasos son notablemente menos precisos. También se probó un proof of concept con RK45 con etsa misma escena. La escena se veía marginalmente mejor a costa de una cantidad considerable de performance. Al final se decidió usar RK4 porque tiene un buen balance entre precisión y performance. Esto es importante porque a medida que la simulación se vuelve más compleja, es importante mantener tanto precisión como rendimiento. 
+```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Iniciar el servidor de desarrollo (Vite)
+npm run dev
+
+# 3. Ejecutar la batería de pruebas unitarias (Morton, Grafo de escena, BVH y layouts WGSL)
+npm test
+
+# 4. Verificar tipos TypeScript y compilar para producción
+npm run build
+```
+
+Al correr `npm run dev`, abre la URL que muestra Vite en la terminal (por defecto `http://localhost:5173`).
+
+---
+
+## Controles e interacción en tiempo real
+
+| Entrada | Acción |
+|---|---|
+| **Arrastrar ratón** | Orbitar la cámara alrededor del agujero negro |
+| **Rueda del ratón** | Acercar / alejar la cámara |
+| **`G`** | Alternar gravedad **ON (espacio curvo)** / **OFF (luz recta)** |
+| **`Espacio`** | Pausar / reanudar el tiempo orbital de la escena |
+| **`B`** | Alternar **BVH de dos niveles (TLAS + BLAS)** / **Fuerza bruta** |
+| **`M`** | Alternar disposición **Morton 2D (orden Z)** / **Lineal** para los hilos y el buffer de imagen |
+| **`H`** | Ciclar vista: **Normal** → **Mapa de calor de pasos RK4** → **Mapa de calor de nodos BVH visitados** |
+| **`[` y `]`** | Disminuir / aumentar el factor `K` del paso adaptativo (más precisión vs más velocidad) |
+| **`2`** | Activar / desactivar un **segundo agujero negro** en órbita |
+
+---
+
+## Documentación técnica
+
+- [`docs/ARQUITECTURA.md`](./docs/ARQUITECTURA.md): flujo completo CPU → GPU, presupuesto de buffers WebGPU y responsabilidades por módulo.
+- [`docs/ESTRUCTURAS_DE_DATOS.md`](./docs/ESTRUCTURAS_DE_DATOS.md): grafo de escena con instanciación, mallas IFS, códigos de Morton 2D/3D y layout exacto en bytes del BVH de dos niveles.
+- [`docs/FISICA_E_INTEGRADORES.md`](./docs/FISICA_E_INTEGRADORES.md): derivación de la aceleración geodésica, RK4 con paso adaptativo, aproximación multi-agujero negro y comparativa frente a RK45 Dormand-Prince.
+- [`docs/ROADMAP.md`](./docs/ROADMAP.md): extensiones futuras y puntos `TODO(ext)` preparados en el código.
+- [`docs/explicacion_RK4_PoC.md`](./docs/explicacion_RK4_PoC.md): explicación divulgativa del integrador RK4 del Proof of Concept inicial (conservado en `poc-lente-gravitacional/`).

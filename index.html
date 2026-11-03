@@ -1,20 +1,59 @@
 <!DOCTYPE html>
+<!--
+  index.html — Página única del simulador.
+  Contiene: el canvas donde WebGPU dibuja, el panel de estadísticas/banderas
+  (lo rellenan src/ui/stats.ts y src/ui/controls.ts) y una caja de error que se
+  muestra si el navegador no soporta WebGPU o el dispositivo no alcanza los
+  límites necesarios.
+-->
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>PoC - Lente gravitacional con WebGPU</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CVI · Lentes gravitacionales en tiempo real (WebGPU)</title>
   <style>
-    body { margin: 0; background: #000; color: #ccc; font-family: sans-serif;
-           display: flex; flex-direction: column; align-items: center; }
-    canvas { width: min(100vw, 1000px); height: auto; margin-top: 12px; }
-    p { margin: 8px; }
+    html, body { margin: 0; height: 100%; background: #000; color: #d6dbe6;
+                 font-family: 'Segoe UI', system-ui, sans-serif; overflow: hidden; }
+    #canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
+              cursor: grab; touch-action: none; }
+    #canvas.dragging { cursor: grabbing; }
+    .overlay { position: fixed; background: rgba(8, 12, 22, 0.82); border: 1px solid #24304a;
+               border-radius: 10px; padding: 12px 14px; font-size: 12px; line-height: 1.45;
+               backdrop-filter: blur(6px); user-select: none; box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+    #stats { top: 10px; left: 10px; min-width: 260px; font-family: Consolas, monospace; }
+    #panel { top: 10px; right: 10px; width: 300px; }
+    #stats table { border-collapse: collapse; width: 100%; }
+    #stats td { padding: 1px 4px; vertical-align: top; }
+    #stats td:first-child { color: #8fb4ff; white-space: nowrap; }
+    .on { color: #7dffa8; } .off { color: #ff8a8a; } .dim { color: #8792a8; }
+    h3 { margin: 0 0 8px 0; font-size: 13px; color: #fff; font-weight: 600; }
+    .ctrl-hint { font-size: 11px; color: #8792a8; margin-bottom: 8px; }
+    .ctrl-row { display: flex; align-items: center; justify-content: space-between;
+                gap: 8px; margin: 5px 0; }
+    .ctrl-label { color: #b9c8e8; font-size: 12px; }
+    .ctrl-btn { background: #162038; color: #d6dbe6; border: 1px solid #2e4068;
+                border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600;
+                cursor: pointer; transition: background 0.15s, border-color 0.15s; min-width: 138px; text-align: center; }
+    .ctrl-btn:hover { background: #1f2e50; border-color: #4b6cb7; }
+    .ctrl-btn.active { background: #143828; color: #7dffa8; border-color: #2c7a53; }
+    .ctrl-btn.inactive { background: #381820; color: #ff9aa2; border-color: #7a2e3d; }
+    .ctrl-seg { display: flex; gap: 4px; margin: 6px 0 8px 0; }
+    .ctrl-seg button { flex: 1; background: #131c30; color: #9fb0d0; border: 1px solid #263554;
+                       border-radius: 5px; padding: 4px 4px; font-size: 11px; cursor: pointer; }
+    .ctrl-seg button.selected { background: #21407a; color: #fff; border-color: #5b8cff; font-weight: 600; }
+    .ctrl-slider-block { margin-top: 8px; padding-top: 6px; border-top: 1px solid #1e2a42; }
+    .ctrl-slider-head { display: flex; justify-content: space-between; font-size: 11.5px; margin-bottom: 2px; }
+    .ctrl-slider-val { font-family: Consolas, monospace; color: #7dffa8; font-weight: 600; }
+    .ctrl-slider { width: 100%; accent-color: #5b8cff; cursor: pointer; margin: 2px 0; }
+    #error { display: none; top: 50%; left: 50%; transform: translate(-50%, -50%);
+             max-width: 560px; font-size: 14px; border-color: #7a2a2a; }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <p>Pulsa <b>G</b> para alternar la gravedad: <span id="estado">ON (espacio curvo)</span></p>
-  <!-- Todo el código vive en src/. type="module" permite usar sintaxis moderna de JS. -->
-  <script type="module" src="./src/main.js"></script>
+  <div id="stats" class="overlay"></div>
+  <div id="panel" class="overlay"></div>
+  <div id="error" class="overlay"></div>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
- 

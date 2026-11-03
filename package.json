@@ -1,0 +1,24 @@
+{
+  "name": "cvi-lentes-gravitacionales",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Simulador en tiempo real de lentes gravitacionales (Schwarzschild) con WebGPU: rayos curvos que chocan con mallas 3D usando un BVH de dos niveles.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.74",
+    "typescript": "~5.8",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.4"
+  }
+}
