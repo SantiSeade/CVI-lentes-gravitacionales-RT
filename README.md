@@ -1,3 +1,5 @@
+***NOTA: El journal de proceso se encuentra en la carpeta docs***
+
 # Simulador en Tiempo Real de Lentes Gravitacionales con WebGPU
 
 Motor gráfico en tiempo real desarrollado para la asignatura de **Computación Visual** que simula **lentes gravitacionales** bajo la métrica de Schwarzschild en **WebGPU / WGSL**. A diferencia de las demos que solo distorsionan una textura de fondo, aquí los rayos de luz se integran numéricamente con **RK4 de paso adaptativo** y cada micro-segmento del rayo curvo se intersecta contra **mallas de triángulos 3D reales** (estrella, planetas y lunas en órbita) aceleradas mediante un **BVH linealizado de dos niveles (TLAS + BLAS)** construido con **códigos de Morton (orden Z)**.
