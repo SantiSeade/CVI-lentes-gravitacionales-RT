@@ -1,9 +1,8 @@
 // =============================================================================
 //  controls.ts — Controles de cámara orbital, botones, sliders y atajos de teclado.
 // =============================================================================
-//  Implementa todos los controles requeridos en la sección 10 mediante botones
-//  interactivos y sliders en el panel derecho (y mantiene también los atajos de
-//  teclado sincronizados con la UI):
+//  Implementa todos los controles requeridos mediante botones interactivos y
+//  sliders en el panel derecho (y mantiene los atajos de teclado sincronizados):
 //
 //    Control UI / Tecla    Acción
 //    --------------------------------------------------------------------------
@@ -11,15 +10,34 @@
 //    Rueda del ratón       Acercar / alejar la cámara
 //    Botón Gravedad (G)    Gravedad ON / OFF (luz curva vs luz recta)
 //    Botón Tiempo (Esp.)   Pausar / reanudar el tiempo de la escena
-//    Botón Aceleración (B) BVH ON (TLAS+BLAS) / Fuerza bruta
-//    Botón Morton (M)      Disposición Morton 2D ON / OFF para la imagen
-//    Botones Vista (H)     Normal / Mapa de calor RK4 / Mapa de calor BVH
 //    Botón 2.º BH (2)      Activar / desactivar el 2.º agujero negro en órbita
+//    Botón Fondo (F)       Mostrar / ocultar rejilla y estrellas de fondo
+//    Botón Sol (S)         Poner / quitar el Sol (estrella emisiva)
+//    Pestañas R / G / B    Seleccionar una de las 3 fuentes spotlight (RGB)
+//      └─ Estado (L)       Encender / apagar la fuente seleccionada
+//      └─ Emisión          Alternar entre Cono y Rayos paralelos
+//      └─ Cantidad de luz  Intensidad emitida por esa fuente (0.0 .. 4.0)
+//      └─ Ángulo del cono  Apertura del cono (5° .. 65°)
+//      └─ Ángulo plano     Elevación respecto al plano XZ (-85° .. 85°)
+//      └─ Rotación BH      Ángulo alrededor del agujero negro (0° .. 360°)
+//    Botones Vista (H)     Normal / Mapa de calor RK4 / Mapa de calor BVH
 //    Slider Factor K       Ajustar factor K del paso adaptativo (0.015 .. 0.250)
 //    Slider Máx. pasos     Ajustar MAX_STEPS del integrador (100 .. 900)
 // =============================================================================
+import type { Vec3 } from '../geometry/mesh';
 import { VIEW_HEAT_BVH, VIEW_HEAT_STEPS, VIEW_NORMAL } from '../gpu/layouts';
 import type { OrbitCamera } from '../scene/camera';
+
+export interface SpotlightChannelState {
+  readonly label: string;
+  readonly color: Vec3;
+  enabled: boolean;
+  parallel: boolean;
+  intensity: number;
+  angleDeg: number;
+  elevationDeg: number;
+  azimuthDeg: number;
+}
 
 export interface SimulationState {
   gravityEnabled: boolean;
@@ -27,7 +45,10 @@ export interface SimulationState {
   bvhEnabled: boolean;
   mortonEnabled: boolean;
   backgroundEnabled: boolean;
+  starEnabled: boolean;
   secondaryBlackHoleEnabled: boolean;
+  activeSpotlightIndex: number;
+  spotlights: [SpotlightChannelState, SpotlightChannelState, SpotlightChannelState];
   viewMode: number;
   /** Factor `K` del paso adaptativo `dt = clamp(K*(d - rs) + dt_min, ...)`. */
   stepK: number;
@@ -44,7 +65,41 @@ export function createDefaultSimState(): SimulationState {
     bvhEnabled: true,
     mortonEnabled: true,
     backgroundEnabled: true,
+    starEnabled: true,
     secondaryBlackHoleEnabled: false,
+    activeSpotlightIndex: 0,
+    spotlights: [
+      {
+        label: 'R',
+        color: [1.0, 0.0, 0.0],
+        enabled: false,
+        parallel: false,
+        intensity: 1.8,
+        angleDeg: 28,
+        elevationDeg: 31,
+        azimuthDeg: 21,
+      },
+      {
+        label: 'G',
+        color: [0.0, 1.0, 0.0],
+        enabled: false,
+        parallel: false,
+        intensity: 1.8,
+        angleDeg: 28,
+        elevationDeg: 31,
+        azimuthDeg: 141,
+      },
+      {
+        label: 'B',
+        color: [0.0, 0.0, 1.0],
+        enabled: false,
+        parallel: false,
+        intensity: 1.8,
+        angleDeg: 28,
+        elevationDeg: 31,
+        azimuthDeg: 261,
+      },
+    ],
     viewMode: VIEW_NORMAL,
     stepK: 0.08,
     dtMin: 0.015,
@@ -71,6 +126,7 @@ export function attachControls(
   camera: OrbitCamera,
   state: SimulationState,
   onToggleSecondaryBh?: (enabled: boolean) => void,
+  onToggleStar?: (enabled: boolean) => void,
 ): { renderPanel: () => void } {
   // ---- 1. Ratón en el canvas: arrastrar para orbitar y rueda para zoom ------
   let dragging = false;
@@ -140,6 +196,50 @@ export function attachControls(
       <button id="btn-bg" class="ctrl-btn" type="button"></button>
     </div>
 
+    <div class="ctrl-row">
+      <span class="ctrl-label">Sol (estrella)</span>
+      <button id="btn-star" class="ctrl-btn" type="button"></button>
+    </div>
+
+    <div class="ctrl-slider-block">
+      <div class="ctrl-slider-head">
+        <span class="ctrl-label">Fuentes Spotlight (RGB)</span>
+      </div>
+      <div class="ctrl-seg">
+        <button id="btn-spot-tab-0" type="button"></button>
+        <button id="btn-spot-tab-1" type="button"></button>
+        <button id="btn-spot-tab-2" type="button"></button>
+      </div>
+      <div class="ctrl-row">
+        <span id="lbl-spot-state" class="ctrl-label">Fuente</span>
+        <button id="btn-spot" class="ctrl-btn" type="button"></button>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">Emisión</span>
+        <button id="btn-spot-mode" class="ctrl-btn" type="button"></button>
+      </div>
+      <div class="ctrl-slider-head" style="margin-top:4px;">
+        <span class="ctrl-label">Cantidad de luz</span>
+        <span id="val-spot-int" class="ctrl-slider-val"></span>
+      </div>
+      <input id="slider-spot-int" class="ctrl-slider" type="range" min="0" max="4" step="0.1" />
+      <div id="spot-angle-wrap" class="ctrl-slider-head" style="margin-top:4px;">
+        <span class="ctrl-label">Ángulo del cono</span>
+        <span id="val-spot-angle" class="ctrl-slider-val"></span>
+      </div>
+      <input id="slider-spot-angle" class="ctrl-slider" type="range" min="5" max="65" step="1" />
+      <div class="ctrl-slider-head" style="margin-top:4px;">
+        <span class="ctrl-label">Ángulo sobre el plano</span>
+        <span id="val-spot-elev" class="ctrl-slider-val"></span>
+      </div>
+      <input id="slider-spot-elev" class="ctrl-slider" type="range" min="-85" max="85" step="1" />
+      <div class="ctrl-slider-head" style="margin-top:4px;">
+        <span class="ctrl-label">Rotación alrededor del BH</span>
+        <span id="val-spot-azim" class="ctrl-slider-val"></span>
+      </div>
+      <input id="slider-spot-azim" class="ctrl-slider" type="range" min="0" max="360" step="1" />
+    </div>
+
     <div class="ctrl-slider-block">
       <div class="ctrl-slider-head">
         <span class="ctrl-label">Modo de vista</span>
@@ -172,6 +272,26 @@ export function attachControls(
   const btnPause = panelEl.querySelector('#btn-pause') as HTMLButtonElement;
   const btnBh2 = panelEl.querySelector('#btn-bh2') as HTMLButtonElement;
   const btnBg = panelEl.querySelector('#btn-bg') as HTMLButtonElement;
+  const btnStar = panelEl.querySelector('#btn-star') as HTMLButtonElement;
+
+  const spotTabs = [
+    panelEl.querySelector('#btn-spot-tab-0') as HTMLButtonElement,
+    panelEl.querySelector('#btn-spot-tab-1') as HTMLButtonElement,
+    panelEl.querySelector('#btn-spot-tab-2') as HTMLButtonElement,
+  ];
+  const lblSpotState = panelEl.querySelector('#lbl-spot-state') as HTMLElement;
+  const btnSpot = panelEl.querySelector('#btn-spot') as HTMLButtonElement;
+  const btnSpotMode = panelEl.querySelector('#btn-spot-mode') as HTMLButtonElement;
+  const sliderSpotInt = panelEl.querySelector('#slider-spot-int') as HTMLInputElement;
+  const valSpotInt = panelEl.querySelector('#val-spot-int') as HTMLElement;
+  const sliderSpotAngle = panelEl.querySelector('#slider-spot-angle') as HTMLInputElement;
+  const valSpotAngle = panelEl.querySelector('#val-spot-angle') as HTMLElement;
+  const spotAngleWrap = panelEl.querySelector('#spot-angle-wrap') as HTMLElement;
+  const sliderSpotElev = panelEl.querySelector('#slider-spot-elev') as HTMLInputElement;
+  const valSpotElev = panelEl.querySelector('#val-spot-elev') as HTMLElement;
+  const sliderSpotAzim = panelEl.querySelector('#slider-spot-azim') as HTMLInputElement;
+  const valSpotAzim = panelEl.querySelector('#val-spot-azim') as HTMLElement;
+
   const viewButtons = [
     panelEl.querySelector('#btn-view-0') as HTMLButtonElement,
     panelEl.querySelector('#btn-view-1') as HTMLButtonElement,
@@ -188,11 +308,42 @@ export function attachControls(
     btn.classList.toggle('inactive', !active);
   };
 
+  const activeSpot = (): SpotlightChannelState => state.spotlights[state.activeSpotlightIndex];
+
   const renderPanel = (): void => {
     setToggleStyle(btnGravity, state.gravityEnabled, 'ON (espacio curvo)', 'OFF (luz recta)');
     setToggleStyle(btnPause, !state.paused, 'Corriendo', 'Pausado');
     setToggleStyle(btnBh2, state.secondaryBlackHoleEnabled, 'ON (activo)', 'OFF (inactivo)');
     setToggleStyle(btnBg, state.backgroundEnabled, 'ON (rejilla/estrellas)', 'OFF (negro)');
+    setToggleStyle(btnStar, state.starEnabled, 'ON (activo)', 'OFF (quitado)');
+
+    const tabColors = ['#ff5c5c', '#5cff7a', '#5ca8ff'];
+    spotTabs.forEach((tab, idx) => {
+      const ch = state.spotlights[idx];
+      tab.classList.toggle('selected', state.activeSpotlightIndex === idx);
+      tab.innerHTML = `<span style="color:${tabColors[idx]}">●</span> ${ch.label} ${ch.enabled ? 'ON' : 'OFF'}`;
+    });
+
+    const sp = activeSpot();
+    lblSpotState.textContent = `Fuente ${sp.label}`;
+    setToggleStyle(btnSpot, sp.enabled, 'ON (activo)', 'OFF (apagado)');
+
+    btnSpotMode.textContent = sp.parallel ? 'Rayos paralelos' : 'Cono';
+    btnSpotMode.classList.remove('active', 'inactive');
+
+    sliderSpotInt.value = String(sp.intensity);
+    valSpotInt.textContent = sp.intensity.toFixed(1);
+
+    sliderSpotAngle.value = String(sp.angleDeg);
+    sliderSpotAngle.disabled = sp.parallel;
+    spotAngleWrap.style.opacity = sp.parallel ? '0.45' : '1';
+    valSpotAngle.textContent = sp.parallel ? 'N/A' : `${sp.angleDeg}°`;
+
+    sliderSpotElev.value = String(sp.elevationDeg);
+    valSpotElev.textContent = `${sp.elevationDeg}°`;
+
+    sliderSpotAzim.value = String(sp.azimuthDeg);
+    valSpotAzim.textContent = `${sp.azimuthDeg}°`;
 
     viewButtons.forEach((b, idx) => {
       b.classList.toggle('selected', state.viewMode === idx);
@@ -225,6 +376,55 @@ export function attachControls(
   btnBg.addEventListener('click', () => {
     state.backgroundEnabled = !state.backgroundEnabled;
     renderPanel();
+  });
+
+  btnStar.addEventListener('click', () => {
+    state.starEnabled = !state.starEnabled;
+    onToggleStar?.(state.starEnabled);
+    renderPanel();
+  });
+
+  spotTabs.forEach((tab, idx) => {
+    tab.addEventListener('click', () => {
+      state.activeSpotlightIndex = idx;
+      renderPanel();
+    });
+  });
+
+  btnSpot.addEventListener('click', () => {
+    const sp = activeSpot();
+    sp.enabled = !sp.enabled;
+    renderPanel();
+  });
+
+  btnSpotMode.addEventListener('click', () => {
+    const sp = activeSpot();
+    sp.parallel = !sp.parallel;
+    renderPanel();
+  });
+
+  sliderSpotInt.addEventListener('input', () => {
+    const sp = activeSpot();
+    sp.intensity = parseFloat(sliderSpotInt.value);
+    valSpotInt.textContent = sp.intensity.toFixed(1);
+  });
+
+  sliderSpotAngle.addEventListener('input', () => {
+    const sp = activeSpot();
+    sp.angleDeg = parseInt(sliderSpotAngle.value, 10);
+    valSpotAngle.textContent = `${sp.angleDeg}°`;
+  });
+
+  sliderSpotElev.addEventListener('input', () => {
+    const sp = activeSpot();
+    sp.elevationDeg = parseInt(sliderSpotElev.value, 10);
+    valSpotElev.textContent = `${sp.elevationDeg}°`;
+  });
+
+  sliderSpotAzim.addEventListener('input', () => {
+    const sp = activeSpot();
+    sp.azimuthDeg = parseInt(sliderSpotAzim.value, 10);
+    valSpotAzim.textContent = `${sp.azimuthDeg}°`;
   });
 
   viewButtons.forEach((b, idx) => {
@@ -267,6 +467,12 @@ export function attachControls(
       onToggleSecondaryBh?.(state.secondaryBlackHoleEnabled);
     } else if (key === 'f') {
       state.backgroundEnabled = !state.backgroundEnabled;
+    } else if (key === 's') {
+      state.starEnabled = !state.starEnabled;
+      onToggleStar?.(state.starEnabled);
+    } else if (key === 'l') {
+      const sp = activeSpot();
+      sp.enabled = !sp.enabled;
     } else {
       return;
     }

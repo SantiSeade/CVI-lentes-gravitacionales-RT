@@ -37,6 +37,7 @@ export interface StructLayout<F extends string> {
 // ---------------------------------------------------------------------------
 export const MAX_BLACK_HOLES = 4;
 export const MAX_MATERIALS = 64;
+export const MAX_SPOTLIGHTS = 3;
 export const BVH_STACK_SIZE = 32;
 export const WORKGROUP_SIZE = 64;
 
@@ -45,6 +46,11 @@ export const FLAG_GRAVITY = 1;
 export const FLAG_BVH = 2;
 export const FLAG_MORTON = 4;
 export const FLAG_BACKGROUND = 8;
+export const FLAG_STAR_LIGHT = 16;
+
+/** Bits del campo `flags` de cada SpotLight. */
+export const SPOT_FLAG_ENABLED = 1;
+export const SPOT_FLAG_PARALLEL = 2;
 
 /** Valores de `view_mode`. */
 export const VIEW_NORMAL = 0;
@@ -52,7 +58,23 @@ export const VIEW_HEAT_STEPS = 1;
 export const VIEW_HEAT_BVH = 2;
 
 // ---------------------------------------------------------------------------
-//  FrameUniforms (uniform, 224 bytes): todo lo que cambia cada fotograma.
+//  SpotLight (64 bytes): una fuente RGB independiente (R, G o B).
+// ---------------------------------------------------------------------------
+export const SPOT_LIGHT: StructLayout<
+  'pos' | 'intensity' | 'dir' | 'cos_outer' | 'color' | 'cos_inner' | 'flags' | '_pad0' | '_pad1' | '_pad2'
+> = {
+  name: 'SpotLight',
+  size: 64,
+  offsets: {
+    pos: 0, intensity: 12,
+    dir: 16, cos_outer: 28,
+    color: 32, cos_inner: 44,
+    flags: 48, _pad0: 52, _pad1: 56, _pad2: 60,
+  },
+};
+
+// ---------------------------------------------------------------------------
+//  FrameUniforms (uniform, 416 bytes): todo lo que cambia cada fotograma.
 // ---------------------------------------------------------------------------
 export const FRAME_UNIFORMS: StructLayout<
   | 'cam_pos' | 'tan_half_fov' | 'cam_right' | 'aspect' | 'cam_up' | 'escape_r' | 'cam_fwd' | 'time'
@@ -62,9 +84,10 @@ export const FRAME_UNIFORMS: StructLayout<
   | 'bh_count' | 'view_mode' | 'instance_count' | 'thread_offset'
   | 'thread_count' | '_pad0' | '_pad1' | '_pad2'
   | 'black_holes'
+  | 'spotlights'
 > = {
   name: 'FrameUniforms',
-  size: 224,
+  size: 416,
   offsets: {
     cam_pos: 0, tan_half_fov: 12,
     cam_right: 16, aspect: 28,
@@ -76,7 +99,8 @@ export const FRAME_UNIFORMS: StructLayout<
     step_k: 112, dt_min: 116, dt_max_rel: 120, dt_max_abs: 124,
     bh_count: 128, view_mode: 132, instance_count: 136, thread_offset: 140,
     thread_count: 144, _pad0: 148, _pad1: 152, _pad2: 156,
-    black_holes: 160, // array<vec4f, MAX_BLACK_HOLES>: xyz = centro, w = rs
+    black_holes: 160, // array<vec4f, MAX_BLACK_HOLES>: xyz = centro, w = rs (64 B)
+    spotlights: 224,  // array<SpotLight, MAX_SPOTLIGHTS> (3 × 64 = 192 B)
   },
 };
 
@@ -136,6 +160,6 @@ export const MESH_INFO: StructLayout<'vertex_offset' | 'triangle_offset' | 'blas
 
 /** Todos los layouts, para recorrerlos en la prueba de layout. */
 export const ALL_LAYOUTS: StructLayout<string>[] = [
-  FRAME_UNIFORMS, PRESENT_UNIFORMS, MATERIAL, VERTEX, BVH_NODE, INSTANCE, MESH_INFO,
+  SPOT_LIGHT, FRAME_UNIFORMS, PRESENT_UNIFORMS, MATERIAL, VERTEX, BVH_NODE, INSTANCE, MESH_INFO,
 ];
 

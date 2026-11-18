@@ -113,6 +113,7 @@ export function instanceWorldBounds(instances: Instance[], meshBounds: Aabb[]): 
 export const PATTERN_NONE = 0;
 export const PATTERN_BANDS = 1;
 export const PATTERN_NOISE = 2;
+export const PATTERN_SPOTLIGHT = 3;
 
 export interface MaterialDesc {
   name: string;

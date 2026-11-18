@@ -31,13 +31,18 @@ import {
   FLAG_BVH,
   FLAG_GRAVITY,
   FLAG_MORTON,
+  FLAG_STAR_LIGHT,
   FRAME_UNIFORMS,
   INSTANCE,
   MATERIAL,
   MAX_BLACK_HOLES,
   MAX_MATERIALS,
+  MAX_SPOTLIGHTS,
   MESH_INFO,
   PRESENT_UNIFORMS,
+  SPOT_FLAG_ENABLED,
+  SPOT_FLAG_PARALLEL,
+  SPOT_LIGHT,
   VERTEX,
 } from './layouts';
 
@@ -233,6 +238,16 @@ export function createSceneBuffers(
   };
 }
 
+export interface SpotLightInput {
+  enabled: boolean;
+  parallel: boolean;
+  pos: Vec3;
+  dir: Vec3;
+  color: Vec3;
+  intensity: number;
+  angleDeg: number;
+}
+
 export interface FrameParamsInput {
   camera: CameraBasis;
   imageWidth: number;
@@ -248,6 +263,8 @@ export interface FrameParamsInput {
   bvhEnabled: boolean;
   mortonEnabled: boolean;
   backgroundEnabled: boolean;
+  starEnabled: boolean;
+  spotlights: SpotLightInput[];
   viewMode: number;
   stepK: number;
   dtMin: number;
@@ -294,6 +311,7 @@ export function updateDynamicBuffers(
   if (params.bvhEnabled) flags |= FLAG_BVH;
   if (params.mortonEnabled) flags |= FLAG_MORTON;
   if (params.backgroundEnabled) flags |= FLAG_BACKGROUND;
+  if (params.starEnabled) flags |= FLAG_STAR_LIGHT;
 
   const tilesX = Math.ceil(params.imageWidth / 8);
   const tilesY = Math.ceil(params.imageHeight / 8);
@@ -347,6 +365,27 @@ export function updateDynamicBuffers(
     f32[base + 1] = bh.position[1];
     f32[base + 2] = bh.position[2];
     f32[base + 3] = bh.rs;
+  }
+
+  // 3b. Parámetros de las 3 fuentes tipo spotlight (R, G, B).
+  const spotCount = Math.min(params.spotlights.length, MAX_SPOTLIGHTS);
+  const so = SPOT_LIGHT.offsets;
+  for (let i = 0; i < spotCount; i++) {
+    const sp = params.spotlights[i];
+    const base = o.spotlights / 4 + i * (SPOT_LIGHT.size / 4);
+    const outerRad = (sp.angleDeg * Math.PI) / 180;
+    const innerRad = outerRad * 0.72;
+    let sFlags = 0;
+    if (sp.enabled) sFlags |= SPOT_FLAG_ENABLED;
+    if (sp.parallel) sFlags |= SPOT_FLAG_PARALLEL;
+
+    f32.set(sp.pos, base + so.pos / 4);
+    f32[base + so.intensity / 4] = sp.intensity;
+    f32.set(sp.dir, base + so.dir / 4);
+    f32[base + so.cos_outer / 4] = Math.cos(outerRad);
+    f32.set(sp.color, base + so.color / 4);
+    f32[base + so.cos_inner / 4] = Math.cos(innerRad);
+    u32[base + so.flags / 4] = sFlags;
   }
 
   device.queue.writeBuffer(buffers.frameUniformBuffer, 0, frameBuf);

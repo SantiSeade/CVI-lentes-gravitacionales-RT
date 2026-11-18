@@ -137,6 +137,7 @@ describe('BVH de dos niveles (bvhBuilder.ts + bvhFlatten.ts)', () => {
     });
 
     // Reglas de tamaño/alineamiento de WGSL para los tipos que usamos en structs.
+    const structInfos = new Map<string, { size: number; align: number }>();
     const wgslTypeInfo = (t: string): { size: number; align: number } => {
       const clean = t.trim();
       if (clean === 'f32' || clean === 'u32' || clean === 'i32') return { size: 4, align: 4 };
@@ -144,6 +145,8 @@ describe('BVH de dos niveles (bvhBuilder.ts + bvhFlatten.ts)', () => {
       if (clean === 'vec3f' || clean === 'vec3u') return { size: 12, align: 16 };
       if (clean === 'vec4f' || clean === 'vec4u') return { size: 16, align: 16 };
       if (clean === 'mat4x4f') return { size: 64, align: 16 };
+      const nested = structInfos.get(clean);
+      if (nested) return nested;
       const arrMatch = clean.match(/^array<([^,]+),\s*(\d+)>$/);
       if (arrMatch) {
         const elem = wgslTypeInfo(arrMatch[1]);
@@ -174,6 +177,7 @@ describe('BVH de dos niveles (bvhBuilder.ts + bvhFlatten.ts)', () => {
         offset += info.size;
       }
       const totalSize = Math.ceil(offset / maxAlign) * maxAlign;
+      structInfos.set(layout.name, { size: totalSize, align: maxAlign });
       expect(computedOffsets).toEqual(layout.offsets);
       expect(totalSize).toBe(layout.size);
     }

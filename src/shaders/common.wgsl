@@ -17,6 +17,7 @@
 const PI: f32 = 3.141592653589793;
 const MAX_BLACK_HOLES: u32 = 4u;
 const MAX_MATERIALS: u32 = 64u;
+const MAX_SPOTLIGHTS: u32 = 3u;
 const BVH_STACK_SIZE: u32 = 32u;
 const WORKGROUP_SIZE: u32 = 64u;
 
@@ -25,6 +26,11 @@ const FLAG_GRAVITY: u32 = 1u;
 const FLAG_BVH: u32 = 2u;
 const FLAG_MORTON: u32 = 4u;
 const FLAG_BACKGROUND: u32 = 8u;
+const FLAG_STAR_LIGHT: u32 = 16u;
+
+// Bits del campo `flags` de cada SpotLight.
+const SPOT_FLAG_ENABLED: u32 = 1u;
+const SPOT_FLAG_PARALLEL: u32 = 2u;
 
 // Modos de visualización (`view_mode`).
 const VIEW_NORMAL: u32 = 0u;
@@ -32,7 +38,23 @@ const VIEW_HEAT_STEPS: u32 = 1u;
 const VIEW_HEAT_BVH: u32 = 2u;
 
 // -----------------------------------------------------------------------------
-//  FrameUniforms (224 bytes): parámetros por fotograma subidos desde CPU.
+//  SpotLight (64 bytes): una fuente RGB independiente (R, G o B).
+// -----------------------------------------------------------------------------
+struct SpotLight {
+  pos: vec3f,
+  intensity: f32,
+  dir: vec3f,
+  cos_outer: f32,
+  color: vec3f,
+  cos_inner: f32,
+  flags: u32,
+  _pad0: u32,
+  _pad1: u32,
+  _pad2: u32,
+}
+
+// -----------------------------------------------------------------------------
+//  FrameUniforms (416 bytes): parámetros por fotograma subidos desde CPU.
 // -----------------------------------------------------------------------------
 struct FrameUniforms {
   cam_pos: vec3f,
@@ -65,6 +87,7 @@ struct FrameUniforms {
   _pad2: u32,
   // Cada elemento: xyz = posición de mundo del agujero negro, w = radio rs.
   black_holes: array<vec4f, 4>,
+  spotlights: array<SpotLight, 3>,
 }
 
 // -----------------------------------------------------------------------------

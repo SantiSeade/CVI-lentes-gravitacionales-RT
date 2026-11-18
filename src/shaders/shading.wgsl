@@ -95,6 +95,19 @@ fn shade_surface(hit: HitInfo, ray_dir: vec3f) -> vec3f {
     albedo = mix(base_b, base_a, smoothstep(0.38, 0.62, n));
   }
 
+  // Indicador visual del emisor de cada spotlight (R, G, B): muestra una carcasa
+  // oscura por detrás y una lente brillante con su color e intensidad apuntando
+  // en dirección `spot.dir`.
+  if (pattern == 3u) {
+    let spot_idx = min(u32(scale + 0.5), MAX_SPOTLIGHTS - 1u);
+    let sp = frame.spotlights[spot_idx];
+    let spot_axis = normalize(sp.dir);
+    let lens = smoothstep(-0.1, 0.25, dot(hit.world_normal, spot_axis));
+    let glow = sp.color * (0.4 + 0.65 * max(sp.intensity, 0.2));
+    let housing = mat.secondary_color.xyz * 0.6;
+    return mix(housing, glow, lens);
+  }
+
   // Si el material es emisivo (estrella), brilla por sí mismo con oscurecimiento al limbo.
   if (mat.emission.w > 0.0) {
     let view_cos = max(dot(hit.world_normal, -ray_dir), 0.15);
@@ -103,10 +116,35 @@ fn shade_surface(hit: HitInfo, ray_dir: vec3f) -> vec3f {
 
   // Iluminación difusa de Lambert hacia la estrella emisiva (dirección recta) + ambiente.
   // TODO(ext): reemplazar por visibilidad curva a lo largo de una geodésica hacia la luz.
-  let to_light = normalize(frame.light_pos - hit.world_pos);
-  let ndotl = max(dot(hit.world_normal, to_light), 0.0);
   let rim = pow(1.0 - max(dot(hit.world_normal, -ray_dir), 0.0), 3.0) * 0.12;
-  let lighting = frame.ambient + (1.0 - frame.ambient) * ndotl * frame.light_color + rim;
+  var lighting = vec3f(frame.ambient) + rim;
+
+  if ((frame.flags & FLAG_STAR_LIGHT) != 0u) {
+    let to_light = normalize(frame.light_pos - hit.world_pos);
+    let ndotl = max(dot(hit.world_normal, to_light), 0.0);
+    lighting = lighting + (1.0 - frame.ambient) * ndotl * frame.light_color;
+  }
+
+  // Suma de las 3 fuentes tipo spotlight (R, G, B; cada una con cono o rayos paralelos).
+  for (var si = 0u; si < MAX_SPOTLIGHTS; si = si + 1u) {
+    let sp = frame.spotlights[si];
+    if ((sp.flags & SPOT_FLAG_ENABLED) == 0u) {
+      continue;
+    }
+    let spot_axis = normalize(sp.dir);
+    var spot_l = -spot_axis;
+    var spot_atten = 1.0;
+
+    if ((sp.flags & SPOT_FLAG_PARALLEL) == 0u) {
+      spot_l = normalize(sp.pos - hit.world_pos);
+      let cos_theta = dot(-spot_l, spot_axis);
+      spot_atten = smoothstep(sp.cos_outer, sp.cos_inner, cos_theta);
+    }
+
+    let spot_ndotl = max(dot(hit.world_normal, spot_l), 0.0);
+    lighting = lighting + spot_ndotl * sp.color * sp.intensity * spot_atten;
+  }
+
   return albedo * lighting;
 }
 

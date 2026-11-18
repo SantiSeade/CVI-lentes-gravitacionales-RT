@@ -17,6 +17,7 @@
 //         c) Ejecuta el compute pass (`trace`, 1 hilo = 1 rayo curvo con RK4)
 //            y luego el render pass que presenta la imagen en el canvas.
 // =============================================================================
+import { vec3 } from 'gl-matrix';
 import { createSceneBuffers, updateDynamicBuffers } from './gpu/buffers';
 import { GpuUnavailableError, initGpu } from './gpu/device';
 import { WORKGROUP_SIZE } from './gpu/layouts';
@@ -85,9 +86,18 @@ async function main(): Promise<void> {
   );
   const pipelines = await createPipelines(gpu.device, gpu.format, buffers);
 
-  attachControls(canvas, panelEl, camera, simState, (enabled) => {
-    solar.secondaryBlackHoleNode.enabled = enabled;
-  });
+  attachControls(
+    canvas,
+    panelEl,
+    camera,
+    simState,
+    (enabled) => {
+      solar.secondaryBlackHoleNode.enabled = enabled;
+    },
+    (enabled) => {
+      solar.starNode.enabled = enabled;
+    },
+  );
   const stats = new StatsOverlay(statsEl);
 
   window.addEventListener('resize', () => {
@@ -107,7 +117,28 @@ async function main(): Promise<void> {
       simTime += dt;
     }
 
-    // 1. Actualizar jerarquía de escena en CPU.
+    // 1. Sincronizar visibilidad y orientación esférica de las 3 fuentes spotlight (R, G, B).
+    const spotDist = 162.0;
+    const spotInputs = simState.spotlights.map((sp, idx) => {
+      const node = solar.spotlightNodes[idx];
+      node.enabled = sp.enabled;
+      const elevRad = (sp.elevationDeg * Math.PI) / 180;
+      const azimRad = (sp.azimuthDeg * Math.PI) / 180;
+      const px = spotDist * Math.cos(elevRad) * Math.sin(azimRad);
+      const py = spotDist * Math.sin(elevRad);
+      const pz = -spotDist * Math.cos(elevRad) * Math.cos(azimRad);
+      vec3.set(node.transform.position, px, py, pz);
+      return {
+        enabled: sp.enabled,
+        parallel: sp.parallel,
+        pos: [px, py, pz] as [number, number, number],
+        dir: [-px, -py, -pz] as [number, number, number],
+        color: sp.color,
+        intensity: sp.intensity,
+        angleDeg: sp.angleDeg,
+      };
+    });
+
     solar.graph.update(simTime);
     const instances = solar.graph.collectInstances();
     const blackHoles = solar.graph.collectBlackHoles();
@@ -130,6 +161,8 @@ async function main(): Promise<void> {
       bvhEnabled: simState.bvhEnabled,
       mortonEnabled: simState.mortonEnabled,
       backgroundEnabled: simState.backgroundEnabled,
+      starEnabled: simState.starEnabled,
+      spotlights: spotInputs,
       viewMode: simState.viewMode,
       stepK: simState.stepK,
       dtMin: simState.dtMin,

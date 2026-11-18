@@ -22,13 +22,15 @@
 //  compartiendo una malla irregular) y naves cargadas desde `.obj`.
 // =============================================================================
 import { createIcosphere } from '../geometry/primitives';
-import { PATTERN_BANDS, PATTERN_NOISE, PATTERN_NONE } from './instances';
+import { PATTERN_BANDS, PATTERN_NOISE, PATTERN_NONE, PATTERN_SPOTLIGHT } from './instances';
 import { Orbit, SceneGraph, SceneNode, Spin } from './sceneGraph';
 
 export interface SolarSystemScene {
   graph: SceneGraph;
   /** Nodo de la estrella emisiva (para consultar su posición de mundo y usarla como luz puntual). */
   starNode: SceneNode;
+  /** Nodos indicadores visuales de las 3 fuentes spotlight (R, G, B; comparten la misma malla). */
+  spotlightNodes: [SceneNode, SceneNode, SceneNode];
   /** Nodo del segundo agujero negro (se puede activar/desactivar en tiempo de ejecución). */
   secondaryBlackHoleNode: SceneNode;
   /** Radio característico de escape de la escena (unidades de rs). */
@@ -230,12 +232,42 @@ export function createSolarSystem(opts: SolarSystemOptions = {}): SolarSystemSce
   });
   addBody(graph.root, 'nyx', 4.5, matNyx, new Orbit(210.0, 250.0, -0.19, 1.7, 1.2), 20.0);
 
+  // ---- Indicadores visuales de los 3 Spotlights RGB (apagados por defecto) --
+  const createSpotNode = (index: number, label: string, color: [number, number, number]): SceneNode => {
+    const mat = graph.addMaterial({
+      name: `spotlight-${label}`,
+      baseColor: color,
+      secondaryColor: [0.15, 0.18, 0.25],
+      pattern: PATTERN_SPOTLIGHT,
+      patternScale: index,
+      emission: color,
+      emissionStrength: 1.0,
+    });
+    const node = graph.root.addChild(
+      new SceneNode(`spotlight-emitter-${label}`, {
+        position: [50, 85, -130],
+        scale: 2.6,
+        meshId: sphereMeshId,
+        materialId: mat,
+      }),
+    );
+    node.enabled = false;
+    return node;
+  };
+
+  const spotlightNodes: [SceneNode, SceneNode, SceneNode] = [
+    createSpotNode(0, 'R', [1.0, 0.0, 0.0]),
+    createSpotNode(1, 'G', [0.0, 1.0, 0.0]),
+    createSpotNode(2, 'B', [0.0, 0.0, 1.0]),
+  ];
+
   // Inicializar matrices en t = 0 para que la escena sea consultable de inmediato.
   graph.update(0);
 
   return {
     graph,
     starNode,
+    spotlightNodes,
     secondaryBlackHoleNode,
     escapeRadius: 600.0,
   };
