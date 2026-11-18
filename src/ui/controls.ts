@@ -26,6 +26,7 @@ export interface SimulationState {
   paused: boolean;
   bvhEnabled: boolean;
   mortonEnabled: boolean;
+  backgroundEnabled: boolean;
   secondaryBlackHoleEnabled: boolean;
   viewMode: number;
   /** Factor `K` del paso adaptativo `dt = clamp(K*(d - rs) + dt_min, ...)`. */
@@ -42,6 +43,7 @@ export function createDefaultSimState(): SimulationState {
     paused: false,
     bvhEnabled: true,
     mortonEnabled: true,
+    backgroundEnabled: true,
     secondaryBlackHoleEnabled: false,
     viewMode: VIEW_NORMAL,
     stepK: 0.08,
@@ -133,6 +135,11 @@ export function attachControls(
       <button id="btn-bh2" class="ctrl-btn" type="button"></button>
     </div>
 
+    <div class="ctrl-row">
+      <span class="ctrl-label">Fondo estelar</span>
+      <button id="btn-bg" class="ctrl-btn" type="button"></button>
+    </div>
+
     <div class="ctrl-slider-block">
       <div class="ctrl-slider-head">
         <span class="ctrl-label">Modo de vista</span>
@@ -164,6 +171,7 @@ export function attachControls(
   const btnGravity = panelEl.querySelector('#btn-gravity') as HTMLButtonElement;
   const btnPause = panelEl.querySelector('#btn-pause') as HTMLButtonElement;
   const btnBh2 = panelEl.querySelector('#btn-bh2') as HTMLButtonElement;
+  const btnBg = panelEl.querySelector('#btn-bg') as HTMLButtonElement;
   const viewButtons = [
     panelEl.querySelector('#btn-view-0') as HTMLButtonElement,
     panelEl.querySelector('#btn-view-1') as HTMLButtonElement,
@@ -184,6 +192,7 @@ export function attachControls(
     setToggleStyle(btnGravity, state.gravityEnabled, 'ON (espacio curvo)', 'OFF (luz recta)');
     setToggleStyle(btnPause, !state.paused, 'Corriendo', 'Pausado');
     setToggleStyle(btnBh2, state.secondaryBlackHoleEnabled, 'ON (activo)', 'OFF (inactivo)');
+    setToggleStyle(btnBg, state.backgroundEnabled, 'ON (rejilla/estrellas)', 'OFF (negro)');
 
     viewButtons.forEach((b, idx) => {
       b.classList.toggle('selected', state.viewMode === idx);
@@ -210,6 +219,11 @@ export function attachControls(
   btnBh2.addEventListener('click', () => {
     state.secondaryBlackHoleEnabled = !state.secondaryBlackHoleEnabled;
     onToggleSecondaryBh?.(state.secondaryBlackHoleEnabled);
+    renderPanel();
+  });
+
+  btnBg.addEventListener('click', () => {
+    state.backgroundEnabled = !state.backgroundEnabled;
     renderPanel();
   });
 
@@ -251,6 +265,8 @@ export function attachControls(
     } else if (e.key === '2') {
       state.secondaryBlackHoleEnabled = !state.secondaryBlackHoleEnabled;
       onToggleSecondaryBh?.(state.secondaryBlackHoleEnabled);
+    } else if (key === 'f') {
+      state.backgroundEnabled = !state.backgroundEnabled;
     } else {
       return;
     }

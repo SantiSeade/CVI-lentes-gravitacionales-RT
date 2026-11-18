@@ -27,6 +27,7 @@ import { instanceWorldBounds, packInstances, packMaterials, type Instance } from
 import type { BlackHoleInstance, SceneGraph } from '../scene/sceneGraph';
 import {
   BVH_NODE,
+  FLAG_BACKGROUND,
   FLAG_BVH,
   FLAG_GRAVITY,
   FLAG_MORTON,
@@ -246,6 +247,7 @@ export interface FrameParamsInput {
   gravityEnabled: boolean;
   bvhEnabled: boolean;
   mortonEnabled: boolean;
+  backgroundEnabled: boolean;
   viewMode: number;
   stepK: number;
   dtMin: number;
@@ -291,6 +293,7 @@ export function updateDynamicBuffers(
   if (params.gravityEnabled) flags |= FLAG_GRAVITY;
   if (params.bvhEnabled) flags |= FLAG_BVH;
   if (params.mortonEnabled) flags |= FLAG_MORTON;
+  if (params.backgroundEnabled) flags |= FLAG_BACKGROUND;
 
   const tilesX = Math.ceil(params.imageWidth / 8);
   const tilesY = Math.ceil(params.imageHeight / 8);

@@ -48,6 +48,9 @@ fn value_noise(p: vec3f) -> f32 {
 
 // Fondo procedural: rejilla de latitud/longitud tenue + campo de estrellas.
 fn shade_background(dir: vec3f) -> vec3f {
+  if ((frame.flags & FLAG_BACKGROUND) == 0u) {
+    return vec3f(0.0);
+  }
   let d = normalize(dir);
   let az = atan2(d.z, d.x);
   let el = asin(clamp(d.y, -1.0, 1.0));

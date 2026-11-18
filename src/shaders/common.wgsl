@@ -24,6 +24,7 @@ const WORKGROUP_SIZE: u32 = 64u;
 const FLAG_GRAVITY: u32 = 1u;
 const FLAG_BVH: u32 = 2u;
 const FLAG_MORTON: u32 = 4u;
+const FLAG_BACKGROUND: u32 = 8u;
 
 // Modos de visualización (`view_mode`).
 const VIEW_NORMAL: u32 = 0u;

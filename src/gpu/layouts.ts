@@ -44,6 +44,7 @@ export const WORKGROUP_SIZE = 64;
 export const FLAG_GRAVITY = 1;
 export const FLAG_BVH = 2;
 export const FLAG_MORTON = 4;
+export const FLAG_BACKGROUND = 8;
 
 /** Valores de `view_mode`. */
 export const VIEW_NORMAL = 0;

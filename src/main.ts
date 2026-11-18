@@ -129,6 +129,7 @@ async function main(): Promise<void> {
       gravityEnabled: simState.gravityEnabled,
       bvhEnabled: simState.bvhEnabled,
       mortonEnabled: simState.mortonEnabled,
+      backgroundEnabled: simState.backgroundEnabled,
       viewMode: simState.viewMode,
       stepK: simState.stepK,
       dtMin: simState.dtMin,
