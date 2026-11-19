@@ -21,3 +21,5 @@ Estado del proyecto:
 ## Nov 18
 
 Se agregó la opción de quitar el fondo con las estrellas y las líneas para poder ver mejor las distorsión de los planetas.
+
+Se agregaron 3 fuentes de luz (RGB respectivamente) tipo spotlight. Se puede controlar su ángulo de dispersión de luz y si los rayos son paralelos o salen de manera radial. Ayuda a ver un poco mejor la manera en la que se mezclan los colores.
