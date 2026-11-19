@@ -28,3 +28,11 @@ Estado del proyecto:
 
 <img width="1902" height="841" alt="image" src="https://github.com/user-attachments/assets/2199327f-abb1-449c-b4f1-15586542a7f5" />
 
+En la clase se discutieron los siguientes puntos de mejora:
+- Configuraciones predeterminadas RGB para ver curvatura. Tomas predeterminadas para explicar el concepto. Donde poner las luces, cámara, etc. para explicar anomalías. Documento de explicación. Interpretative doc. IEEE Vis póster (2p). 
+- Opción de apagar texturas de los planetas.
+- Diferencias mejor las fuentes de luz y planetas. Posiblemente hacer las fuentes de luz un cilindro. 
+- Disco de acreción.
+- Preguntarle a un profesor.
+- Mostrar defor
+
