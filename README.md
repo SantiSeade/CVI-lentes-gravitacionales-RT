@@ -1,4 +1,4 @@
-***NOTA: El journal de proceso se encuentra en la carpeta docs***
+**_NOTA: El journal de proceso se encuentra en la carpeta docs_**
 
 # Simulador en Tiempo Real de Lentes Gravitacionales con WebGPU
 
@@ -35,17 +35,17 @@ Al correr `npm run dev`, abre la URL que muestra Vite en la terminal (por defect
 
 ## Controles e interacción en tiempo real
 
-| Entrada | Acción |
-|---|---|
-| **Arrastrar ratón** | Orbitar la cámara alrededor del agujero negro |
-| **Rueda del ratón** | Acercar / alejar la cámara |
-| **`G`** | Alternar gravedad **ON (espacio curvo)** / **OFF (luz recta)** |
-| **`Espacio`** | Pausar / reanudar el tiempo orbital de la escena |
-| **`B`** | Alternar **BVH de dos niveles (TLAS + BLAS)** / **Fuerza bruta** |
-| **`M`** | Alternar disposición **Morton 2D (orden Z)** / **Lineal** para los hilos y el buffer de imagen |
-| **`H`** | Ciclar vista: **Normal** → **Mapa de calor de pasos RK4** → **Mapa de calor de nodos BVH visitados** |
-| **`[` y `]`** | Disminuir / aumentar el factor `K` del paso adaptativo (más precisión vs más velocidad) |
-| **`2`** | Activar / desactivar un **segundo agujero negro** en órbita |
+| Entrada             | Acción                                                                                               |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Arrastrar ratón** | Orbitar la cámara alrededor del agujero negro                                                        |
+| **Rueda del ratón** | Acercar / alejar la cámara                                                                           |
+| **`G`**             | Alternar gravedad **ON (espacio curvo)** / **OFF (luz recta)**                                       |
+| **`Espacio`**       | Pausar / reanudar el tiempo orbital de la escena                                                     |
+| **`B`**             | Alternar **BVH de dos niveles (TLAS + BLAS)** / **Fuerza bruta**                                     |
+| **`M`**             | Alternar disposición **Morton 2D (orden Z)** / **Lineal** para los hilos y el buffer de imagen       |
+| **`H`**             | Ciclar vista: **Normal** → **Mapa de calor de pasos RK4** → **Mapa de calor de nodos BVH visitados** |
+| **`[` y `]`**       | Disminuir / aumentar el factor `K` del paso adaptativo (más precisión vs más velocidad)              |
+| **`2`**             | Activar / desactivar un **segundo agujero negro** en órbita                                          |
 
 ---
 
@@ -54,5 +54,4 @@ Al correr `npm run dev`, abre la URL que muestra Vite en la terminal (por defect
 - [`docs/ARQUITECTURA.md`](./docs/ARQUITECTURA.md): flujo completo CPU → GPU, presupuesto de buffers WebGPU y responsabilidades por módulo.
 - [`docs/ESTRUCTURAS_DE_DATOS.md`](./docs/ESTRUCTURAS_DE_DATOS.md): grafo de escena con instanciación, mallas IFS, códigos de Morton 2D/3D y layout exacto en bytes del BVH de dos niveles.
 - [`docs/FISICA_E_INTEGRADORES.md`](./docs/FISICA_E_INTEGRADORES.md): derivación de la aceleración geodésica, RK4 con paso adaptativo, aproximación multi-agujero negro y comparativa frente a RK45 Dormand-Prince.
-- [`docs/ROADMAP.md`](./docs/ROADMAP.md): extensiones futuras y puntos `TODO(ext)` preparados en el código.
 - [`docs/explicacion_RK4_PoC.md`](./docs/explicacion_RK4_PoC.md): explicación divulgativa del integrador RK4 del Proof of Concept inicial (conservado en `poc-lente-gravitacional/`).
